@@ -51,10 +51,12 @@ class TestRegistrationContractNegative:
             f"Expected: {422}\n"
             f"Actual: {response.status_code}"
         )
-        validation_error = HTTPValidationError.model_validate(response.json())
-        assert any(
-            error.type == ValidationErrorType.NO_REQUIRED_FIELD
-            for error in validation_error.detail
+        validation_error_model = HTTPValidationError.model_validate(response.json())
+        actual_error_type = validation_error_model.detail[0].type
+        assert actual_error_type == ValidationErrorType.NO_REQUIRED_FIELD, (
+            f"Wrong validation error type\n"
+            f"Expected: {ValidationErrorType.NO_REQUIRED_FIELD}\n"
+            f"Actual: {actual_error_type}\n"
         )
 
     def test_register_extra_field(

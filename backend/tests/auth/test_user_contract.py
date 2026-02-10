@@ -36,22 +36,21 @@ class TestUserContractPositive:
 @pytest.mark.negative
 @pytest.mark.contract
 class TestUserContractNegative:
-    @pytest.mark.parametrize(
-        "session",
-        [
-            pytest.param(
-                "auth_invalid_token_session",
-                id="invalid_token"
-            ),
-            pytest.param(
-                "auth_anonym_session",
-                id="no_token"
-            )
-        ],
-        indirect=True
-    )
-    def test_user_get_me_unauthorized(self, session):
-        user_helper = UserHelper(session)
+    def test_user_get_me_invalid_token(self, auth_invalid_token_session):
+        user_helper = UserHelper(auth_invalid_token_session)
+
+        response = user_helper.get_me()
+
+        assert response.status_code == 401, (
+            f"Wrong status code\n"
+            f"Expected: {401}\n"
+            f"Actual: {response.status_code}"
+        )
+
+        SuccessResponse.model_validate(response.json())
+
+    def test_user_get_me_no_token(self, auth_anonym_session):
+        user_helper = UserHelper(auth_anonym_session)
 
         response = user_helper.get_me()
 

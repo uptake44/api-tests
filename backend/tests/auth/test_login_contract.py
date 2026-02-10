@@ -2,7 +2,7 @@ import pytest
 from faker import Faker
 
 from backend.src.services.authentication.models.response.login_response import LoginResponse
-from backend.src.services.general.enums import ValidationErrorType
+from backend.src.services.general.enums import ValidationErrorType, ResponseMessage
 from backend.src.services.general.models.response.http_validation_error import HTTPValidationError
 from backend.src.services.general.models.response.success_response import SuccessResponse
 
@@ -55,10 +55,15 @@ class TestLoginContractNegative:
             f"Actual: {response.status_code}"
         )
 
-        validation_error = HTTPValidationError.model_validate(response.json())
-        assert any(
-            error.type == ValidationErrorType.NO_REQUIRED_FIELD
-            for error in validation_error.detail
+        validation_error_model = HTTPValidationError.model_validate(
+            response.json()
+        )
+
+        actual_error_type = validation_error_model.detail[0].type
+        assert actual_error_type == ValidationErrorType.NO_REQUIRED_FIELD, (
+            f"Wrong validation error type\n"
+            f"Expected: {ValidationErrorType.NO_REQUIRED_FIELD}\n"
+            f"Actual: {actual_error_type}\n"
         )
 
     @pytest.mark.parametrize(
@@ -98,4 +103,8 @@ class TestLoginContractNegative:
         )
 
         login_response = SuccessResponse.model_validate(response.json())
-        assert login_response.detail == "Invalid login credentials"
+        assert login_response.detail == ResponseMessage.INVALID_LOGIN, (
+            f"Wrong response message\n"
+            f"Expected: {ResponseMessage.INVALID_LOGIN}\n"
+            f"Actual: {login_response.detail}\n"
+        )

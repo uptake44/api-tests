@@ -8,8 +8,8 @@ from backend.src.services.universirty.models.request.grade_request import GradeR
 from backend.src.services.universirty.models.request.group_request import GroupRequest
 from backend.src.services.universirty.models.request.student_request import StudentRequest
 from backend.src.services.universirty.models.request.teacher_request import TeacherRequest
-from backend.src.services.universirty.models.response.grade_response import GradeResponse
-from backend.src.services.universirty.models.response.grade_statistic_response import GradeStatisticResponse
+from backend.src.services.universirty.models.response.grade_response import GradeResponse, AllGradesResponse
+from backend.src.services.universirty.models.response.grade_stats_response import GradeStatsResponse
 from backend.src.services.universirty.models.response.group_response import GroupResponse
 from backend.src.services.universirty.models.response.student_response import (StudentResponse,
                                                                                AllStudentsResponse)
@@ -29,7 +29,7 @@ class UniversityService(BaseService):
 
     def get_all_students(self) -> AllStudentsResponse:
         response = self.student_helper.get_students()
-        return AllStudentsResponse(**response.json())
+        return AllStudentsResponse(students=response.json())
 
     def create_student(
             self,
@@ -70,7 +70,7 @@ class UniversityService(BaseService):
         return SuccessResponse(**response.json())
 
     def create_grade(self, grade_request: GradeRequest) -> GradeResponse:
-        response = self.grade_helper.post_grades(
+        response = self.grade_helper.post_grade(
             data=grade_request.model_dump()
         )
         return GradeResponse(**response.json())
@@ -79,11 +79,29 @@ class UniversityService(BaseService):
         response = self.grade_helper.delete_grade(grade_id)
         return SuccessResponse(**response.json())
 
+    def get_grades(
+            self,
+            student_id: int | None = None,
+            teacher_id: int | None = None,
+            group_id: int | None = None,
+    ) -> AllGradesResponse:
+        response = self.grade_helper.get_grades(
+            student_id=student_id,
+            teacher_id=teacher_id,
+            group_id=group_id
+        )
+        return AllGradesResponse(grades=response.json())
+
+
     def get_grades_stats(
             self,
-            params: dict | None = None
-    ) -> GradeStatisticResponse:
+            student_id: int | None = None,
+            teacher_id: int | None = None,
+            group_id: int | None = None
+    ) -> GradeStatsResponse:
         response = self.grade_helper.get_grades_stats(
-            params=params
+            student_id=student_id,
+            teacher_id=teacher_id,
+            group_id=group_id
         )
-        return GradeStatisticResponse(**response.json())
+        return GradeStatsResponse(**response.json())

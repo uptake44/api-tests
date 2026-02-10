@@ -53,10 +53,6 @@ def registered_user_credentials(auth_anonym_session, register_payload):
     )
 
 
-@pytest.fixture
-def session(request):
-    return request.getfixturevalue(request.param)
-
 
 @pytest.fixture
 def auth_anonym_service(auth_anonym_session):

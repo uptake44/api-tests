@@ -2,6 +2,7 @@ import pytest
 from faker import Faker
 
 from backend.src.services.authentication.models.request.register_request import RegisterRequest
+from backend.src.services.general.enums import ResponseMessage
 from backend.src.services.general.models.response.http_validation_error import HTTPValidationError
 from backend.src.utils.data_utils import DataUtils
 
@@ -76,7 +77,11 @@ class TestRegistrationConflictNegative:
         auth_anonym_service.register_user(user)
 
         response = auth_anonym_service.register_user(user)
-        assert response.detail == "Username is already taken"
+        assert response.detail == ResponseMessage.USERNAME_TAKEN, (
+            f"Wrong response message\n"
+            f"Expected: {ResponseMessage.USERNAME_TAKEN}\n"
+            f"Actual: {response.detail}"
+        )
 
     def test_email_must_be_unique(self, auth_anonym_service):
         password = DataUtils.get_password()
@@ -96,4 +101,8 @@ class TestRegistrationConflictNegative:
         auth_anonym_service.register_user(first_user)
 
         response = auth_anonym_service.register_user(second_user)
-        assert response.detail == "Email is already taken"
+        assert response.detail == ResponseMessage.EMAIL_TAKEN, (
+            f"Wrong response message\n"
+            f"Expected: {ResponseMessage.EMAIL_TAKEN}\n"
+            f"Actual: {response.detail}"
+        )

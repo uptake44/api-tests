@@ -51,22 +51,8 @@ class TestStudentContractPositive:
 @pytest.mark.negative
 @pytest.mark.contract
 class TestStudentContractNegative:
-    @pytest.mark.parametrize(
-        "session",
-        [
-            pytest.param(
-                "university_invalid_token_session",
-                id="invalid_token"
-            ),
-            pytest.param(
-                "university_anonym_session",
-                id="no_token"
-            ),
-        ],
-        indirect=True
-    )
-    def test_create_student_unauthorized(self, session, student_payload):
-        student_helper = StudentHelper(session)
+    def test_create_student_invalid_token(self, university_invalid_token_session, student_payload):
+        student_helper = StudentHelper(university_invalid_token_session)
 
         response = student_helper.post_student(
             json=student_payload.model_dump()
@@ -79,22 +65,34 @@ class TestStudentContractNegative:
         )
         SuccessResponse.model_validate(response.json())
 
-    @pytest.mark.parametrize(
-        "session",
-        [
-            pytest.param(
-                "university_invalid_token_session",
-                id="invalid_token"
-            ),
-            pytest.param(
-                "university_anonym_session",
-                id="no_token"
-            ),
-        ],
-        indirect=True
-    )
-    def test_get_students_unauthorized(self, session):
-        student_helper = StudentHelper(session)
+    def test_create_student_no_token(self, university_anonym_session, student_payload):
+        student_helper = StudentHelper(university_anonym_session)
+
+        response = student_helper.post_student(
+            json=student_payload.model_dump()
+        )
+
+        assert response.status_code == 401, (
+            "Wrong status code\n"
+            f"Actual: {response.status_code}\n"
+            f"Expected: {401}\n"
+        )
+        SuccessResponse.model_validate(response.json())
+
+    def test_get_students_invalid_token(self, university_invalid_token_session):
+        student_helper = StudentHelper(university_invalid_token_session)
+
+        response = student_helper.get_students()
+
+        assert response.status_code == 401, (
+            f"Wrong status code\n"
+            f"Actual: {response.status_code}\n"
+            f"Expected: {401}\n"
+        )
+        SuccessResponse.model_validate(response.json())
+
+    def test_get_students_no_token(self, university_anonym_session):
+        student_helper = StudentHelper(university_anonym_session)
 
         response = student_helper.get_students()
 
@@ -133,7 +131,10 @@ class TestStudentContractNegative:
             f"Expected: {422}\n"
         )
         validation_error = HTTPValidationError.model_validate(response.json())
-        assert any(
-            error.type == ValidationErrorType.NO_REQUIRED_FIELD
-            for error in validation_error.detail
+
+        actual_validation_error = validation_error.detail[0].type
+        assert actual_validation_error == ValidationErrorType.NO_REQUIRED_FIELD, (
+            f"Wrong validation error\n"
+            f"Actual: {validation_error}\n"
+            f"Expected: {ValidationErrorType.NO_REQUIRED_FIELD}\n"
         )

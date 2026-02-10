@@ -6,7 +6,7 @@ from backend.src.services.universirty.models.base_student import BaseStudent
 
 
 class AllStudentsResponse(BaseModel):
-    object: List[StudentResponse]
+    students: List[StudentResponse]
 
 
 class StudentResponse(BaseStudent):
