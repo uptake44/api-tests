@@ -1,3 +1,4 @@
+import allure
 import pytest
 from faker import Faker
 
@@ -9,9 +10,11 @@ from backend.src.services.universirty.models.response.grade_stats_response impor
 fake = Faker()
 
 
+@allure.feature("Получение статистики оценок")
 @pytest.mark.contract
 @pytest.mark.positive
 class TestGradesStatsPositiveContract:
+    @allure.title("Оценки успешно получены")
     def test_get_grades_stats_success(
             self,
             university_admin_session
@@ -20,17 +23,21 @@ class TestGradesStatsPositiveContract:
 
         response = grade_helper.get_grades_stats()
 
-        assert response.status_code == 200, (
-            "Wrong status code\n"
-            f"Actual: {response.status_code}\n"
-            f"Expected: {200}\n"
-        )
-        GradeStatsResponse.model_validate(response.json())
+        with allure.step("Получен статус код 200"):
+            assert response.status_code == 200, (
+                "Wrong status code\n"
+                f"Actual: {response.status_code}\n"
+                f"Expected: {200}\n"
+            )
+        with allure.step("Ответ соответствует контракту"):
+            GradeStatsResponse.model_validate(response.json())
 
 
+@allure.feature("Получение статистики оценок")
 @pytest.mark.contract
 @pytest.mark.negative
 class TestGradesStatsNegativeContract:
+    @allure.title("Анонимный пользователь не может получить статистику")
     def test_get_grades_stats_no_token(
             self,
             university_anonym_session
@@ -39,13 +46,16 @@ class TestGradesStatsNegativeContract:
 
         response = grade_helper.get_grades_stats()
 
-        assert response.status_code == 401, (
-            "Wrong status code\n"
-            f"Actual: {response.status_code}\n"
-            f"Expected: {401}\n"
-        )
-        SuccessResponse.model_validate(response.json())
+        with allure.step("Получен статус код 401"):
+            assert response.status_code == 401, (
+                "Wrong status code\n"
+                f"Actual: {response.status_code}\n"
+                f"Expected: {401}\n"
+            )
+        with allure.step("Ответ соответствует контракту"):
+            SuccessResponse.model_validate(response.json())
 
+    @allure.title("Статистика не может быть получена без подтверждения прав пользователя")
     def test_get_grades_stats_invalid_token(
             self,
             university_invalid_token_session
@@ -54,12 +64,15 @@ class TestGradesStatsNegativeContract:
 
         response = grade_helper.get_grades_stats()
 
-        assert response.status_code == 401, (
-            "Wrong status code\n"
-            f"Actual: {response.status_code}\n"
-            f"Expected: {401}\n")
-        SuccessResponse.model_validate(response.json())
+        with allure.step("Получен статус код 401"):
+            assert response.status_code == 401, (
+                "Wrong status code\n"
+                f"Actual: {response.status_code}\n"
+                f"Expected: {401}\n")
+        with allure.step("Ответ соответствует контракту"):
+            SuccessResponse.model_validate(response.json())
 
+    @allure.title("Статистика не получена с дополнительно переданным полем")
     def test_get_grades_stats_extra_param(
             self,
             university_admin_session
@@ -70,8 +83,10 @@ class TestGradesStatsNegativeContract:
             extra_param=fake.word()
         )
 
-        assert response.status_code == 422, (
-            "Wrong status code\n"
-            f"Actual: {response.status_code}\n"
-            f"Expected: {422}\n")
-        HTTPValidationError.model_validate(response.json())
+        with allure.step("Получен статус код 422"):
+            assert response.status_code == 422, (
+                "Wrong status code\n"
+                f"Actual: {response.status_code}\n"
+                f"Expected: {422}\n")
+        with allure.step("Ответ соответствует контракту"):
+            HTTPValidationError.model_validate(response.json())

@@ -3,7 +3,6 @@ from random import choice, randint
 import pytest
 from faker import Faker
 
-from backend.src.services.general.enums import GradeCount
 from backend.src.services.universirty.models.base_grade import GradeLimits
 from backend.src.services.universirty.models.base_student import DegreeEnum
 from backend.src.services.universirty.models.base_teacher import SubjectEnum
@@ -15,6 +14,9 @@ from backend.src.services.universirty.university_service import UniversityServic
 from backend.src.utils.api_utils import ApiUtils
 
 fake = Faker()
+
+GRADE_COUNT_MIN = 3
+GRADE_COUNT_MAX = 6
 
 
 @pytest.fixture
@@ -34,7 +36,7 @@ def university_invalid_token_session():
     return ApiUtils(
         url=UniversityService.SERVICE_URL,
         headers={
-            "Authorization": f"Bearer invalid_token"
+            "Authorization": "Bearer invalid_token"
         }
     )
 
@@ -61,7 +63,7 @@ def teacher_payload():
 @pytest.fixture
 def group_payload():
     return GroupRequest(
-        name=fake.word()
+        name=f"{fake.word()}{fake.word()}"
     )
 
 
@@ -70,7 +72,7 @@ def student_payload(created_group):
     return StudentRequest(
         first_name=fake.first_name(),
         last_name=fake.last_name(),
-        email=fake.email(),
+        email=f"{fake.word()}{fake.email()}",
         degree=choice([degree for degree in DegreeEnum]),
         phone=fake.numerify("+7##########"),
         group_id=created_group.id
@@ -146,7 +148,7 @@ def student_factory(university_admin_service, group_factory):
             student_request=StudentRequest(
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
-                email=fake.email(),
+                email=f"{fake.word()}{fake.email()}",
                 degree=choice([degree for degree in DegreeEnum]),
                 phone=fake.numerify("+7##########"),
                 group_id=group.id
@@ -190,7 +192,7 @@ def student_grades(
 ):
     student_grades = []
     created_grade_ids = []
-    for _ in range(GradeCount.MIN, GradeCount.MAX):
+    for _ in range(GRADE_COUNT_MIN, GRADE_COUNT_MAX):
         response = university_admin_service.create_grade(
             GradeRequest(
                 student_id=created_student.id,
@@ -210,7 +212,7 @@ def student_grades(
 @pytest.fixture
 def created_grades(grade_factory):
     grades = []
-    for _ in range(GradeCount.MIN, GradeCount.MAX):
+    for _ in range(GRADE_COUNT_MIN, GRADE_COUNT_MAX):
         response = grade_factory()
         grades.append(response.grade)
     return grades

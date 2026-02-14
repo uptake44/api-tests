@@ -1,3 +1,4 @@
+import allure
 import pytest
 from faker import Faker
 
@@ -8,25 +9,31 @@ from backend.src.services.general.models.response.success_response import Succes
 fake = Faker()
 
 
+@allure.feature("Регистрация")
 @pytest.mark.positive
 @pytest.mark.contract
 class TestRegistrationContractPositive:
+    @allure.title("Пользователь успешно зарегистрирован")
     def test_register_successful(self, auth_anonym_helper, register_payload):
         response = auth_anonym_helper.post_register(
             data=register_payload.model_dump()
         )
 
-        assert response.status_code == 201, (
-            f"Wrong status code\n"
-            f"Expected: {201}\n"
-            f"Actual: {response.status_code}"
-        )
-        SuccessResponse.model_validate(response.json())
+        with allure.step("Получен статус код 201"):
+            assert response.status_code == 201, (
+                f"Wrong status code\n"
+                f"Expected: {201}\n"
+                f"Actual: {response.status_code}"
+            )
+        with allure.step("Ответ соответствует контракту"):
+            SuccessResponse.model_validate(response.json())
 
 
+@allure.feature("Регистрация")
 @pytest.mark.negative
 @pytest.mark.contract
 class TestRegistrationContractNegative:
+    @allure.title("Пользователь не может зарегистрироваться без обязательного поля")
     @pytest.mark.parametrize(
         "exclude_field",
         [
@@ -46,37 +53,45 @@ class TestRegistrationContractNegative:
             data=register_payload.model_dump(exclude=exclude_field)
         )
 
-        assert response.status_code == 422, (
-            f"Wrong status code\n"
-            f"Expected: {422}\n"
-            f"Actual: {response.status_code}"
-        )
-        validation_error_model = HTTPValidationError.model_validate(response.json())
-        actual_error_type = validation_error_model.detail[0].type
-        assert actual_error_type == ValidationErrorType.NO_REQUIRED_FIELD, (
-            f"Wrong validation error type\n"
-            f"Expected: {ValidationErrorType.NO_REQUIRED_FIELD}\n"
-            f"Actual: {actual_error_type}\n"
-        )
+        with allure.step("Получен статус код 422"):
+            assert response.status_code == 422, (
+                f"Wrong status code\n"
+                f"Expected: {422}\n"
+                f"Actual: {response.status_code}"
+            )
+        with allure.step("Ответ соответствует контракту"):
+            validation_error_model = HTTPValidationError.model_validate(response.json())
+            actual_error_type = validation_error_model.detail[0].type
+            with allure.step("Получена ошибка отсутствия поля"):
+                assert actual_error_type == ValidationErrorType.NO_REQUIRED_FIELD, (
+                    f"Wrong validation error type\n"
+                    f"Expected: {ValidationErrorType.NO_REQUIRED_FIELD}\n"
+                    f"Actual: {actual_error_type}\n"
+                )
 
+    @allure.title("Пользователь не может зарегистрироваться с дополнительно переданным полем")
     def test_register_extra_field(
             self,
             register_payload,
             auth_anonym_helper
     ):
-        data = register_payload.model_dump()
-        data.update(
-            {
-                "bio": fake.sentence(),
-            }
-        )
+        with allure.step("Подготовка данных"):
+            data = register_payload.model_dump()
+            data.update(
+                {
+                    "bio": fake.sentence(),
+                }
+            )
         response = auth_anonym_helper.post_register(
             data=data
         )
 
-        assert response.status_code == 422, (
-            f"Wrong status code\n"
-            f"Expected: {422}\n"
-            f"Actual: {response.status_code}"
-        )
-        HTTPValidationError.model_validate(response.json())
+        with allure.step("Получен статус код 422"):
+            assert response.status_code == 422, (
+                f"Wrong status code\n"
+                f"Expected: {422}\n"
+                f"Actual: {response.status_code}"
+            )
+
+        with allure.step("Получена ошибка о неправильном запросе"):
+            HTTPValidationError.model_validate(response.json())

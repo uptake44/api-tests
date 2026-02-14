@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 import pytest
 from faker import Faker
 
@@ -24,34 +22,26 @@ def login_payload(registered_user_credentials):
 @pytest.fixture
 def register_payload():
     valid_password = DataUtils.get_password()
-
     return RegisterRequest(
         username=fake.user_name(),
         password=valid_password,
         password_repeat=valid_password,
-        email=fake.email()
+        email=f"{fake.word()}{fake.email()}"
     )
-
-
-@dataclass
-class UserCredentials:
-    username: str
-    password: str
 
 
 @pytest.fixture
 def registered_user_credentials(auth_anonym_session, register_payload):
-    auth_service = AuthService(auth_anonym_session)
+    auth_helper = AuthHelper(auth_anonym_session)
 
-    auth_service.register_user(
-        register_payload
+    auth_helper.post_register(
+        register_payload.model_dump()
     )
 
-    return UserCredentials(
+    return LoginRequest(
         username=register_payload.username,
         password=register_payload.password
     )
-
 
 
 @pytest.fixture

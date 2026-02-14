@@ -1,3 +1,4 @@
+import allure
 import requests
 
 from backend.src.services.general.helpers.base_helper import BaseHelper
@@ -10,6 +11,7 @@ class GradeHelper(BaseHelper):
     GRADE_ENDPOINT = f"{ENDPOINT_PREFIX}/{{grade_id}}"
     STATS_ENDPOINT = f"{ENDPOINT_PREFIX}/stats"
 
+    @allure.step("Создание оценки")
     def post_grade(self, data: dict) -> requests.Response:
         response = self.api_utils.post(
             endpoint=self.ROOT_ENDPOINT,
@@ -17,6 +19,7 @@ class GradeHelper(BaseHelper):
         )
         return response
 
+    @allure.step("Получение оценок")
     def get_grades(
             self,
             student_id: int | None = None,
@@ -26,13 +29,17 @@ class GradeHelper(BaseHelper):
         response = self.api_utils.get(
             endpoint=self.ROOT_ENDPOINT,
             params={
-                "student_id": student_id,
-                "teacher_id": teacher_id,
-                "group_id": group_id,
+                k: v for k, v in {
+                    "student_id": student_id,
+                    "teacher_id": teacher_id,
+                    "group_id": group_id,
+                }.items()
+                if v is not None
             }
         )
         return response
 
+    @allure.step("Получение статистики оценок")
     def get_grades_stats(
             self,
             student_id: int | None = None,
@@ -43,14 +50,18 @@ class GradeHelper(BaseHelper):
         response = self.api_utils.get(
             endpoint=self.STATS_ENDPOINT,
             params={
-                "student_id": student_id,
-                "teacher_id": teacher_id,
-                "group_id": group_id,
-                **kwargs
+                k: v
+                for k, v in {
+                    "student_id": student_id,
+                    "teacher_id": teacher_id,
+                    "group_id": group_id
+                }.items()
+                if v is not None
             }
         )
         return response
 
+    @allure.step("Удаление оценки")
     def delete_grade(self, grade_id: int) -> requests.Response:
         response = self.api_utils.delete(
             endpoint=self.GRADE_ENDPOINT.format(grade_id=grade_id)

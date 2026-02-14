@@ -207,3 +207,4 @@ __marimo__/
 
 logs/
 pytest.ini
+allure-results/
