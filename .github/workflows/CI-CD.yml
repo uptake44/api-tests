@@ -1,0 +1,120 @@
+name: API tests
+
+
+on:
+  push:
+    branches:
+      - api-tests-dev
+
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  ruff-linter:
+    name: Ruff code check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ruff-action
+        uses: astral-sh/ruff-action@v3.6.1
+        with:
+          args: check .
+
+  test:
+    name: API tests
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB_AUTH: ${{ vars.POSTGRES_DB_AUTH }}
+      POSTGRES_DB_UNIVERSITY: ${{ vars.POSTGRES_DB_UNIVERSITY }}
+      UNIVERSITY_SERVICE_INTERNAL_URL: ${{ vars.UNIVERSITY_SERVICE_INTERNAL_URL }}
+      UNIVERSITY_SERVICE_API_URL: ${{ vars.UNIVERSITY_SERVICE_API_URL }}
+      AUTH_SERVICE_INTERNAL_URL: ${{ vars.AUTH_SERVICE_INTERNAL_URL }}
+      AUTH_SERVICE_API_URL: ${{ vars.AUTH_SERVICE_API_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run docker-compose
+        run: docker compose up -d
+
+      - name: Build API tests Docker
+        run: docker build -t api-tests -f Dockerfile .
+
+      - name: Run tests in Docker
+        run: |
+          docker run --network host \
+          -v ${{ github.workspace }}:/app \
+          api-tests \
+          pytest -s -v --alluredir /app/allure-results
+
+      - name: Docker shutdown
+        if: always()
+        run: docker compose down
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: allure-results
+          path:
+            allure-results
+          retention-days: 1
+
+  generate-report:
+    name: Generate Allure report
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+
+      - name: Setup Allure
+        run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.36.0/allure-2.36.0.tgz && sudo tar -zxvf allure-2.36.0.tgz -C /opt/ && sudo ln -s /opt/allure-2.36.0/bin/allure /usr/bin/allure
+
+      - name: Get Allure artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: allure-results
+          path: allure-results
+      - run: allure generate -c allure-results -o allure-report
+
+      - name: Upload Allure report
+        uses: actions/upload-artifact@v6
+        with:
+          name: allure-report
+          path: allure-report
+          retention-days: 1
+
+
+  publish-report:
+    name: Publish Allure report
+    runs-on: ubuntu-latest
+    needs: generate-report
+    if: always()
+    steps:
+      - name: Get all workflow run artifacts
+        uses: actions/download-artifact@v7
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: allure-report-page
+          path: allure-report
+
+      - name: Deploy report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: 'allure-report-page'
