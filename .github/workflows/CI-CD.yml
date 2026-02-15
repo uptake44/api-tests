@@ -53,12 +53,14 @@ jobs:
           docker run --network host \
           -v ${{ github.workspace }}:/app \
           api-tests \
-          pytest -s -v --alluredir /app/allure-results || true
+          pytest -s -v --alluredir /app/allure-results
 
       - name: Docker shutdown
+        if: always()
         run: docker compose down
 
       - name: Upload Allure results
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: allure-results
